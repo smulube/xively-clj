@@ -1,4 +1,4 @@
-(ns xively-clj.core)
+(ns xively.core)
 
 (defn foo
   "I don't do a whole lot."
