@@ -7,7 +7,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [clj-http "0.4.0"]
-                 [cheshire "4.0.0"]]
+                 [clj-http "0.7.2"]
+                 [cheshire "5.1.2"]]
 
   :plugins [[lein-marginalia "0.7.1"]])
