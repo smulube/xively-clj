@@ -10,4 +10,9 @@
                  [clj-http "0.7.2"]
                  [cheshire "5.1.2"]]
 
-  :plugins [[lein-marginalia "0.7.1"]])
+  :profiles {:dev {:dependencies [[speclj "2.5.0"]]}}
+
+  :plugins [[lein-marginalia "0.7.1"]
+            [speclj "2.5.0"]]
+
+  :test-paths ["spec/"])
