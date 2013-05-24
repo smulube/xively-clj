@@ -18,7 +18,9 @@
 
 (describe "stringify-keys"
   (it "stringifies all the keys in a map"
-    (should= {"title" "title"} (core/stringify-keys {:title "title"}))))
+    (should= {"title" "title"} (core/stringify-keys {:title "title"})))
+  (it "handles maps which already have string keys"
+    (should= {"title" "title"} (core/stringify-keys {"title" "title"}))))
 
 (describe "parse-json"
   (it "parses a json string returning keyword keys"
