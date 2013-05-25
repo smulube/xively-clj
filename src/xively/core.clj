@@ -13,11 +13,13 @@
   (str "xively-clj/0.1.0-SNAPSHOT (https://xively.com) Clojure/"
        (clojure-version)))
 
-(defn headers
+(defn build-headers
   "Return map of headers suitable for passing to the API, merging in user
   supplied headers."
-  [& user-headers]
-  (merge {"X-ApiKey" *api-key*, "User-Agent" *user-agent*} user-headers))
+  ([]
+    (build-headers {}))
+  ([user-headers]
+    (merge {"X-ApiKey" *api-key*, "User-Agent" *user-agent*} user-headers)))
 
 (defn keywordise
   "Convert key strings returned in JSON from the API into Clojure style
@@ -49,25 +51,34 @@
 
 (defn safe-parse
   [{:keys [headers status body] :as response}]
-  (cond
-    (= 304 status)
+  (if (= 304 status)
       ::not-modified
-    (#{204 400 401 403 404 422 500 503} status)
-    (update-in response [:body] parse-json)
-    :else
-      (parse-json body)))
+      (select-keys (update-in response [:body] parse-json) [:status :headers :body])))
 
 (defmacro with-api-key
-  "Set the api key to be used for all contained requests"
+  "Set the api key to be used for all wrapped function calls"
   [api-key & body]
   `(binding [*api-key* ~api-key]
+     (do ~@body)))
+
+(defmacro with-api-url
+  "Set the api url to be used for all wrapped function calls."
+  [api-url & body]
+  `(binding [*api-url* ~api-url]
+     (do ~@body)))
+
+(defmacro with-api-details
+  "Set both the api key and url to be used for all wrapped function calls."
+  [api-key api-url & body]
+  `(binding [*api-key* ~api-key
+             *api-url* ~api-url]
      (do ~@body)))
 
 (defn api-call
   "Make an HTTP request to the API"
   [http-method path & [opts]]
   (let [url (str *api-url* path)
-        headers (headers (:headers opts))
+        headers (build-headers (:headers opts))
         opts (dissoc opts :headers)]
     (safe-parse (http/request (merge {:method http-method,
                                       :url url,

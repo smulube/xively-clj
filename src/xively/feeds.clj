@@ -8,13 +8,13 @@
   ([feed version]
     feed))
 
-(defn feed
+(defn get-feed
   "Return details of a feed"
   [feed-id]
   (let [resource (str "/feeds/" feed-id)]
     (api-call :get resource)))
 
-(defn create
+(defn create-feed
   "Create a new feed on Xively. Passed a map containing our values"
   [feed]
   (let [resource "/feeds"

@@ -29,8 +29,10 @@
     (should= nil (core/parse-json nil))))
 
 (describe "safe-parse"
-  (it "returns the parsed body for a 200 status code"
-    (should= {:title "title", :product-id "12345"}
+  (it "returns map containing headers, status and parsed body for a 200 status code"
+    (should= {:headers "headers",
+              :status 200,
+              :body { :title "title", :product-id "12345"}}
              (core/safe-parse {:headers "headers"
                                :status 200
                                :body "{\"title\":\"title\",\"product_id\":\"12345\"}"})))
@@ -43,4 +45,45 @@
               :body {:error "Server error"}}
              (core/safe-parse {:headers "headers"
                                :status 500
-                               :body "{\"error\":\"Server error\"}"}))))
+                               :body "{\"error\":\"Server error\"}"})))
+  (it "filters out any extra headers"
+    (should= {:headers "headers"
+              :status 200
+              :body {:title "title"}}
+             (core/safe-parse {:headers "headers"
+                               :status 200
+                               :body "{\"title\":\"title\"}"
+                               :extra "extra"}))))
+
+(describe "User-Agent string"
+  (it "should have a default user agent"
+    (should-not-be-nil core/*user-agent*)))
+
+(describe "API url"
+  (it "should have a default API url"
+    (should-not-be-nil core/*api-url*)))
+
+(describe "API key"
+  (it "should not have a default API key"
+    (should-be-nil core/*api-key*))
+  (describe "when it has a binding"
+    (around [it]
+      (binding [core/*api-key* "12345"]
+        (it)))
+      (it "should use the bound API key"
+        (should= "12345" core/*api-key*))))
+
+(describe "build-headers"
+  (around [it]
+    (binding [core/*api-key* "12345"]
+      (it)))
+  (it "should return default headers if not passed any header parameters"
+    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers)))
+  (it "should return default headers if passed nil"
+    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers nil)))
+  (it "should return default headers if passed nil"
+    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers {})))
+  (it "should allow overriding headers"
+    (should= {"X-ApiKey" "12345", "User-Agent" "clojure"} (core/build-headers {"User-Agent" "clojure"})))
+  (it "should merge in any extra headers"
+    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*, "X-Log-Request" "true"} (core/build-headers {"X-Log-Request" "true"}))))
