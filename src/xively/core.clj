@@ -13,13 +13,10 @@
   (str "xively-clj/0.1.0-SNAPSHOT (https://xively.com) Clojure/"
        (clojure-version)))
 
-(defn build-headers
-  "Return map of headers suitable for passing to the API, merging in user
-  supplied headers."
-  ([]
-    (build-headers {}))
-  ([user-headers]
-    (merge {"X-ApiKey" *api-key*, "User-Agent" *user-agent*} user-headers)))
+(defn headers
+  "Return map containing headers to be sent when making requests to the API."
+  []
+  {"X-ApiKey" *api-key*, "User-Agent" *user-agent*, "Content-Type" "application/json"})
 
 (defn keywordise
   "Convert key strings returned in JSON from the API into Clojure style
@@ -43,18 +40,32 @@
   (into (empty m)
     (for [[k v] m] [(stringify k) v])))
 
-(defn parse-json
+(defn parse-generic-json
   "Same as json/parse-string but handles nil gracefully and returns keys as
   keywords."
-  [s]
-  (when s (json/parse-string s keywordise)))
+  [str]
+  (when str (json/parse-string str keywordise)))
 
-(defn safe-parse
+(defn build-generic-json
+  "Build a json string from the passed in map. Converts clojure style keyword
+  keys into strings."
+  [record]
+  (json/generate-string (stringify-keys record)))
+
+(defn parse-response
   [{:keys [headers status body] :as response}]
   (if (= 304 status)
-      ::not-modified
-      (select-keys (update-in response [:body] parse-json) [:status :headers :body])))
+      :not-modified
+      (select-keys (update-in response [:body] parse-generic-json) [:status :headers :body])))
 
+(defn api-call
+  "Make an HTTP request to the API. Returns "
+  [http-method path & [opts]]
+  (let [url (str *api-url* path)
+        opts (merge opts {:throw-exceptions false})]
+    (parse-response (http/request (merge {:method http-method,
+                                          :url url,
+                                          :headers (headers)} opts)))))
 (defmacro with-api-key
   "Set the api key to be used for all wrapped function calls"
   [api-key & body]
@@ -67,19 +78,10 @@
   `(binding [*api-url* ~api-url]
      (do ~@body)))
 
-(defmacro with-api-details
+(defmacro with-api
   "Set both the api key and url to be used for all wrapped function calls."
   [api-key api-url & body]
   `(binding [*api-key* ~api-key
              *api-url* ~api-url]
      (do ~@body)))
 
-(defn api-call
-  "Make an HTTP request to the API"
-  [http-method path & [opts]]
-  (let [url (str *api-url* path)
-        headers (build-headers (:headers opts))
-        opts (dissoc opts :headers)]
-    (safe-parse (http/request (merge {:method http-method,
-                                      :url url,
-                                      :headers headers} opts)))))

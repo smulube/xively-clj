@@ -22,35 +22,43 @@
   (it "handles maps which already have string keys"
     (should= {"title" "title"} (core/stringify-keys {"title" "title"}))))
 
-(describe "parse-json"
+(describe "parse-generic-json"
   (it "parses a json string returning keyword keys"
     (should= {:title "title", :product-id "12345"}
-             (core/parse-json "{\"title\":\"title\",\"product_id\":\"12345\"}"))
-    (should= nil (core/parse-json nil))))
+             (core/parse-generic-json "{\"title\":\"title\",\"product_id\":\"12345\"}"))
+    (should= nil (core/parse-generic-json nil))))
 
-(describe "safe-parse"
+(describe "build-generic-json"
+  (it "builds a json string from passed in map"
+    (should= "{\"title\":\"title\"}"
+             (core/build-generic-json {:title "title"})))
+  (it "should stringify the keys"
+    (should= "{\"product_id\":\"12345\"}"
+             (core/build-generic-json {:product-id "12345"}))))
+
+(describe "parse-response"
   (it "returns map containing headers, status and parsed body for a 200 status code"
     (should= {:headers "headers",
               :status 200,
               :body { :title "title", :product-id "12345"}}
-             (core/safe-parse {:headers "headers"
+             (core/parse-response {:headers "headers"
                                :status 200
                                :body "{\"title\":\"title\",\"product_id\":\"12345\"}"})))
   (it "returns a not-modified keyword for a 304 status code"
-    (should= :xively.core/not-modified
-             (core/safe-parse {:status 304})))
+    (should= :not-modified
+             (core/parse-response {:status 304})))
   (it "returns the original response but with a parsed body"
     (should= {:headers "headers"
               :status 500
               :body {:error "Server error"}}
-             (core/safe-parse {:headers "headers"
+             (core/parse-response {:headers "headers"
                                :status 500
                                :body "{\"error\":\"Server error\"}"})))
   (it "filters out any extra headers"
     (should= {:headers "headers"
               :status 200
               :body {:title "title"}}
-             (core/safe-parse {:headers "headers"
+             (core/parse-response {:headers "headers"
                                :status 200
                                :body "{\"title\":\"title\"}"
                                :extra "extra"}))))
@@ -72,18 +80,3 @@
         (it)))
       (it "should use the bound API key"
         (should= "12345" core/*api-key*))))
-
-(describe "build-headers"
-  (around [it]
-    (binding [core/*api-key* "12345"]
-      (it)))
-  (it "should return default headers if not passed any header parameters"
-    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers)))
-  (it "should return default headers if passed nil"
-    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers nil)))
-  (it "should return default headers if passed nil"
-    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*} (core/build-headers {})))
-  (it "should allow overriding headers"
-    (should= {"X-ApiKey" "12345", "User-Agent" "clojure"} (core/build-headers {"User-Agent" "clojure"})))
-  (it "should merge in any extra headers"
-    (should= {"X-ApiKey" "12345", "User-Agent" core/*user-agent*, "X-Log-Request" "true"} (core/build-headers {"X-Log-Request" "true"}))))
