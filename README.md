@@ -16,9 +16,9 @@ A Clojure library designed to interact with the Xively API.
 (xively/with-api-key api-key
   (feeds/update-feed 504 {:title "Title",
                           :description "Description,
-                          :descriptions [{:id "sensor1", :current-value "12.2"},
-                                         {:id "sensor2", :current-value "182"},
-                                         {:id "sensor3", :current-value "Fred"}]}))
+                          :datastreams [{:id "sensor1", :current-value "12.2"},
+                                        {:id "sensor2", :current-value "182"},
+                                        {:id "sensor3", :current-value "Fred"}]}))
 ```
 
 ## License
